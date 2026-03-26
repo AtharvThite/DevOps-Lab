@@ -5,7 +5,6 @@ const {
   getPipelineStatus,
   getPipelineLogs,
   getPipelineHistory,
-  getPipelinePreflight,
 } = require("../controllers/pipelineController");
 
 const router = express.Router();
@@ -30,7 +29,6 @@ const upload = multer({
 });
 
 router.post("/run", upload.single("codeZip"), runPipeline);
-router.get("/preflight", getPipelinePreflight);
 router.get("/status/:id", getPipelineStatus);
 router.get("/logs/:id", getPipelineLogs);
 router.get("/history", getPipelineHistory);

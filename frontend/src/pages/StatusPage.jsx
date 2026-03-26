@@ -87,16 +87,6 @@ export default function StatusPage() {
         <p className="summary-line">
           Current Stage: <strong>{status?.currentStage || "queued"}</strong>
         </p>
-        {status?.deploymentInfo?.instanceName && (
-          <>
-            <p className="summary-line">
-              Deployment Target: <strong>{status.deploymentInfo.target}</strong>
-            </p>
-            <p className="summary-line">
-              Instance: <strong>{status.deploymentInfo.instanceName}</strong>
-            </p>
-          </>
-        )}
         {status?.error && <p className="error-text">{status.error}</p>}
 
         <Link to="/history" className="ghost-link">

@@ -28,7 +28,6 @@ backend/
 ## Backend APIs
 
 - `POST /pipeline/run` - create and queue a pipeline run (repo URL or ZIP upload)
-- `GET /pipeline/preflight` - checks required env values and binary availability
 - `GET /pipeline/status/:id` - stage-by-stage status
 - `GET /pipeline/logs/:id` - logs per stage
 - `GET /pipeline/history` - historical runs
@@ -46,7 +45,8 @@ npm run dev
 
 Notes:
 - Make sure MongoDB is running locally or set `MONGO_URI` to a reachable instance.
-- Use `GET /pipeline/preflight` before pipeline runs to verify required binaries are installed.
+- `SIMULATE_PIPELINE=true` uses mocked stage execution.
+- Set `SIMULATE_PIPELINE=false` to execute real CLI tools.
 
 ### 2) Frontend
 

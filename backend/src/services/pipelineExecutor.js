@@ -1,12 +1,12 @@
 const PipelineJob = require("../models/PipelineJob");
+const { runCommand } = require("./commandRunner");
 const config = require("../config/env");
-const { prepareSource } = require("./sourcePreparationService");
-const { runSonarStage } = require("./sonarService");
-const { runTerraformStage } = require("./terraformService");
-const { runAnsibleStage } = require("./ansibleService");
-const { runDeploymentStage } = require("./deploymentService");
 
 const STAGE_ORDER = ["sonar", "terraform", "ansible", "deployment"];
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function appendLog(jobId, stage, message) {
   await PipelineJob.findByIdAndUpdate(jobId, {
@@ -17,11 +17,67 @@ async function appendLog(jobId, stage, message) {
 }
 
 async function updateStage(jobId, stage, status, extras = {}) {
-  await PipelineJob.findByIdAndUpdate(jobId, {
-    $set: {
-      [`stages.${stage}.status`]: status,
-      ...extras,
+  const payload = {
+    [`stages.${stage}.status`]: status,
+    ...extras,
+  };
+
+  await PipelineJob.findByIdAndUpdate(jobId, { $set: payload });
+}
+
+async function runSimulatedStage(jobId, stage, messages) {
+  await updateStage(jobId, stage, "running", {
+    [`stages.${stage}.startedAt`]: new Date(),
+    currentStage: stage,
+  });
+
+  for (const message of messages) {
+    await appendLog(jobId, stage, message);
+    await sleep(800);
+  }
+
+  if (stage === "sonar" && config.simulateSonarFail) {
+    await appendLog(jobId, stage, "QUALITY GATE STATUS: FAILED");
+    throw new Error("Pipeline stopped because SonarQube quality gate failed");
+  }
+
+  await updateStage(jobId, stage, "success", {
+    [`stages.${stage}.finishedAt`]: new Date(),
+  });
+}
+
+async function executeRealStage(job, stage, command) {
+  await updateStage(job._id, stage, "running", {
+    [`stages.${stage}.startedAt`]: new Date(),
+    currentStage: stage,
+  });
+
+  await appendLog(job._id, stage, `Executing command: ${command}`);
+
+  const stageOutput = [];
+
+  await runCommand(command, {
+    cwd: process.cwd(),
+    onLog: async (line) => {
+      if (line) {
+        stageOutput.push(line);
+        await appendLog(job._id, stage, line);
+      }
     },
+  });
+
+  if (stage === "sonar") {
+    const qualityGateFailed = stageOutput.some((line) =>
+      line.toUpperCase().includes(config.sonarFailPattern.toUpperCase())
+    );
+
+    if (qualityGateFailed) {
+      throw new Error("Pipeline stopped because SonarQube quality gate failed");
+    }
+  }
+
+  await updateStage(job._id, stage, "success", {
+    [`stages.${stage}.finishedAt`]: new Date(),
   });
 }
 
@@ -37,104 +93,74 @@ async function markRemainingAsSkipped(jobId, failedStage) {
   }
 }
 
-function ensureRuntimeConfig() {
-  if (!config.sonarToken) {
-    throw new Error("SONAR_TOKEN is required for real SonarQube integration");
-  }
-
-  if (!["multipass", "lxd"].includes(config.deploymentTarget.toLowerCase())) {
-    throw new Error("DEPLOYMENT_TARGET must be either multipass or lxd");
-  }
-}
-
-async function runStage(jobId, stage, stageRunner) {
-  await updateStage(jobId, stage, "running", {
-    currentStage: stage,
-    [`stages.${stage}.startedAt`]: new Date(),
-    [`stages.${stage}.finishedAt`]: null,
-  });
-
-  const appendStageLog = async (line) => {
-    await appendLog(jobId, stage, line);
-  };
-
-  await stageRunner(appendStageLog);
-
-  await updateStage(jobId, stage, "success", {
-    [`stages.${stage}.finishedAt`]: new Date(),
-  });
-}
-
 async function runPipeline(jobId) {
   const job = await PipelineJob.findById(jobId);
   if (!job) {
     return;
   }
 
+  await PipelineJob.findByIdAndUpdate(jobId, {
+    $set: {
+      status: "running",
+      currentStage: "sonar",
+    },
+  });
+
+  const stageConfigs = {
+    sonar: {
+      command: config.sonarCommand,
+      logs: [
+        "Preparing SonarQube scanner context",
+        "Analyzing code quality metrics",
+        "Evaluating quality gate",
+      ],
+    },
+    terraform: {
+      command: `${config.terraformInitCommand} && ${config.terraformApplyCommand}`,
+      logs: [
+        "Initializing Terraform backend and providers",
+        "Planning infrastructure changes",
+        "Applying infrastructure with auto approval",
+      ],
+    },
+    ansible: {
+      command: config.ansibleCommand,
+      logs: [
+        "Loading Ansible inventory",
+        "Applying configuration tasks",
+        "Verifying service health checks",
+      ],
+    },
+    deployment: {
+      command:
+        config.deploymentTarget.toLowerCase() === "lxd"
+          ? config.lxdCommand
+          : config.multipassCommand,
+      logs: [
+        `Provisioning runtime instance using ${config.deploymentTarget}`,
+        "Deploying application artifacts",
+        "Running post-deployment verification",
+      ],
+    },
+  };
+
   try {
-    ensureRuntimeConfig();
+    for (const stage of STAGE_ORDER) {
+      const stageConfig = stageConfigs[stage];
 
-    await PipelineJob.findByIdAndUpdate(jobId, {
-      $set: {
-        status: "running",
-        currentStage: "sonar",
-        error: "",
-      },
-    });
+      if (config.simulatePipeline) {
+        await runSimulatedStage(jobId, stage, stageConfig.logs);
+      } else {
+        await executeRealStage(job, stage, stageConfig.command);
+      }
 
-    // Prepare source once, then pass paths to each stage for real command execution.
-    const sourceDir = await prepareSource({
-      job,
-      onLog: async (line) => {
-        await appendLog(jobId, "sonar", `[source] ${line}`);
-      },
-    });
-
-    const projectKey = `pipeline-${jobId.toString()}`;
-
-    // Step 1 and 2: run Sonar scan and verify quality gate through Sonar API.
-    await runStage(jobId, "sonar", async (appendStageLog) => {
-      await runSonarStage({
-        projectKey,
-        sourceDir,
-        appendLog: appendStageLog,
-      });
-    });
-
-    // Step 3: provision infrastructure from Terraform folder.
-    await runStage(jobId, "terraform", async (appendStageLog) => {
-      await runTerraformStage({
-        sourceDir,
-        appendLog: appendStageLog,
-      });
-    });
-
-    // Step 4: configure infrastructure with Ansible inventory/playbook.
-    await runStage(jobId, "ansible", async (appendStageLog) => {
-      await runAnsibleStage({
-        sourceDir,
-        appendLog: appendStageLog,
-      });
-    });
-
-    // Step 5: deploy on Multipass or LXD and persist instance metadata.
-    await runStage(jobId, "deployment", async (appendStageLog) => {
-      const deploymentInfo = await runDeploymentStage({
-        jobId,
-        appendLog: appendStageLog,
-      });
-
-      await PipelineJob.findByIdAndUpdate(jobId, {
-        $set: {
-          deploymentInfo,
-        },
-      });
-    });
+    }
 
     await PipelineJob.findByIdAndUpdate(jobId, {
       $set: {
         status: "success",
         currentStage: "completed",
+        error: "",
       },
     });
   } catch (error) {
@@ -144,7 +170,7 @@ async function runPipeline(jobId) {
     await updateStage(jobId, failedStage, "failed", {
       [`stages.${failedStage}.finishedAt`]: new Date(),
     });
-    await appendLog(jobId, failedStage, `ERROR: ${error.message}`);
+    await appendLog(jobId, failedStage, error.message);
     await markRemainingAsSkipped(jobId, failedStage);
 
     await PipelineJob.findByIdAndUpdate(jobId, {

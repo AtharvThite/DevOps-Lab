@@ -47,11 +47,6 @@ const pipelineJobSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    deploymentInfo: {
-      target: { type: String, default: "" },
-      instanceName: { type: String, default: "" },
-      instanceStatus: { type: String, default: "" },
-    },
   },
   {
     timestamps: { createdAt: true, updatedAt: true },

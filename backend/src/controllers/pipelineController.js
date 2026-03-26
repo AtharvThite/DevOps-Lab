@@ -1,7 +1,6 @@
 const path = require("path");
 const PipelineJob = require("../models/PipelineJob");
 const pipelineQueue = require("../services/pipelineQueue");
-const { runPreflightChecks } = require("../services/preflightService");
 
 function buildJobPayload({ repoUrl, filePath }) {
   return {
@@ -15,26 +14,12 @@ function buildJobPayload({ repoUrl, filePath }) {
       ansible: { status: "pending", logs: [] },
       deployment: { status: "pending", logs: [] },
     },
-    deploymentInfo: {
-      target: "",
-      instanceName: "",
-      instanceStatus: "",
-    },
   };
-}
-
-function isValidGithubUrl(value) {
-  try {
-    const parsed = new URL(value);
-    return ["http:", "https:"].includes(parsed.protocol) && parsed.hostname.includes("github.com");
-  } catch (_error) {
-    return false;
-  }
 }
 
 async function runPipeline(req, res) {
   try {
-    const repoUrl = typeof req.body.repoUrl === "string" ? req.body.repoUrl.trim() : "";
+    const { repoUrl } = req.body;
     const uploadedFile = req.file;
 
     if (!repoUrl && !uploadedFile) {
@@ -46,12 +31,6 @@ async function runPipeline(req, res) {
     if (repoUrl && uploadedFile) {
       return res.status(400).json({
         message: "Provide either repo URL or ZIP file, not both",
-      });
-    }
-
-    if (repoUrl && !isValidGithubUrl(repoUrl)) {
-      return res.status(400).json({
-        message: "Repository URL must be a valid GitHub URL",
       });
     }
 
@@ -86,7 +65,6 @@ async function getPipelineStatus(req, res) {
       currentStage: job.currentStage,
       stages: job.stages,
       error: job.error,
-      deploymentInfo: job.deploymentInfo,
       createdAt: job.createdAt,
       updatedAt: job.updatedAt,
     });
@@ -122,19 +100,10 @@ async function getPipelineHistory(_req, res) {
   try {
     const jobs = await PipelineJob.find({})
       .sort({ createdAt: -1 })
-      .select("repoUrl filePath status stages currentStage createdAt updatedAt error deploymentInfo")
+      .select("repoUrl filePath status stages currentStage createdAt updatedAt error")
       .lean();
 
     return res.json({ jobs });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-}
-
-async function getPipelinePreflight(_req, res) {
-  try {
-    const checks = await runPreflightChecks();
-    return res.json(checks);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -145,5 +114,4 @@ module.exports = {
   getPipelineStatus,
   getPipelineLogs,
   getPipelineHistory,
-  getPipelinePreflight,
 };

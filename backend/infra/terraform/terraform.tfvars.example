@@ -1,0 +1,7 @@
+lxd_container_name = "devops-lab-app"
+lxd_profile_name   = "devops-lab-profile"
+lxd_image          = "ubuntu:22.04"
+lxd_storage_pool   = "default"
+lxd_network        = "lxdbr0"
+lxd_cpu            = 2
+lxd_memory         = "2GB"

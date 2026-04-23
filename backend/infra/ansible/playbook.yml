@@ -1,0 +1,97 @@
+---
+- name: Configure LXD application container
+  hosts: lxd
+  gather_facts: false
+  vars:
+    lxd_container_name: "{{ lookup('env', 'LXD_CONTAINER_NAME') | default('devops-lab-app', true) }}"
+    app_dir: "{{ lookup('env', 'APP_DIR') | default('/opt/devops-lab', true) }}"
+    nodejs_version: "v20.17.0"
+    nodejs_dist: "node-{{ nodejs_version }}-linux-x64"
+    nodejs_archive_path: "/tmp/{{ nodejs_dist }}.tar.xz"
+
+  tasks:
+    - name: Ensure container is running
+      ansible.builtin.command: "lxc start {{ lxd_container_name }}"
+      register: lxd_start
+      changed_when: "'already running' not in (lxd_start.stderr | default(''))"
+      failed_when: "lxd_start.rc != 0 and ('already running' not in (lxd_start.stderr | default('')))"
+
+    - name: Check whether node and npm already exist in container
+      ansible.builtin.command: >-
+        lxc exec {{ lxd_container_name }} -- bash -lc
+        "command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1"
+      register: node_runtime_exists
+      changed_when: false
+      failed_when: false
+
+    - name: Check DNS resolution inside container
+      ansible.builtin.command: "lxc exec {{ lxd_container_name }} -- getent hosts archive.ubuntu.com"
+      register: dns_check
+      changed_when: false
+      failed_when: false
+
+    - name: Apply fallback DNS resolvers if lookup fails
+      ansible.builtin.command: >-
+        lxc exec {{ lxd_container_name }} -- bash -lc
+        "rm -f /etc/resolv.conf && printf 'nameserver 10.100.219.1\nnameserver 1.1.1.1\n' > /etc/resolv.conf"
+      when: dns_check.rc != 0
+
+    - name: Wait until apt and dpkg locks are released
+      ansible.builtin.command: >-
+        lxc exec {{ lxd_container_name }} -- bash -lc
+        "for i in $(seq 1 60); do if ! pgrep -x apt-get >/dev/null && ! pgrep -x apt >/dev/null && ! pgrep -x dpkg >/dev/null; then exit 0; fi; sleep 2; done; exit 1"
+      changed_when: false
+      failed_when: false
+
+    - name: Update apt package metadata (best effort)
+      ansible.builtin.command: >-
+        lxc exec {{ lxd_container_name }} -- bash -lc
+        "apt-get update -o Acquire::Retries=3 -o APT::Update::Error-Mode=any"
+      register: apt_update
+      changed_when: false
+      failed_when: false
+
+    - name: Install baseline packages in the container (best effort)
+      ansible.builtin.command: >-
+        lxc exec {{ lxd_container_name }} -- bash -lc
+        "DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl git"
+      when: apt_update.rc == 0
+      register: baseline_install
+      changed_when: "'0 upgraded, 0 newly installed' not in (baseline_install.stdout | default(''))"
+      failed_when: false
+
+    - name: Download Node.js archive on host
+      ansible.builtin.command: >-
+        curl -fsSL -o {{ nodejs_archive_path }}
+        https://nodejs.org/dist/{{ nodejs_version }}/{{ nodejs_dist }}.tar.xz
+      when: node_runtime_exists.rc != 0
+
+    - name: Extract Node.js archive on host
+      ansible.builtin.command: "tar -xJf {{ nodejs_archive_path }} -C /tmp"
+      when: node_runtime_exists.rc != 0
+
+    - name: Remove previous Node.js distribution in container
+      ansible.builtin.command: "lxc exec {{ lxd_container_name }} -- rm -rf /usr/local/{{ nodejs_dist }}"
+      when: node_runtime_exists.rc != 0
+
+    - name: Push Node.js distribution into container
+      ansible.builtin.command: "lxc file push -r /tmp/{{ nodejs_dist }} {{ lxd_container_name }}/usr/local/"
+      when: node_runtime_exists.rc != 0
+
+    - name: Link node, npm and npx binaries in container
+      ansible.builtin.command: >-
+        lxc exec {{ lxd_container_name }} -- bash -lc
+        "ln -sf /usr/local/{{ nodejs_dist }}/bin/node /usr/local/bin/node && ln -sf /usr/local/{{ nodejs_dist }}/bin/npm /usr/local/bin/npm && ln -sf /usr/local/{{ nodejs_dist }}/bin/npx /usr/local/bin/npx"
+      when: node_runtime_exists.rc != 0
+
+    - name: Ensure app directory exists
+      ansible.builtin.command: "lxc exec {{ lxd_container_name }} -- mkdir -p {{ app_dir }}"
+
+    - name: Check Node.js runtime in container
+      ansible.builtin.command: "lxc exec {{ lxd_container_name }} -- bash -lc 'node --version && npm --version'"
+      register: node_version
+      changed_when: false
+
+    - name: Show Node.js version
+      ansible.builtin.debug:
+        var: node_version.stdout

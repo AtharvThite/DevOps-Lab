@@ -5,7 +5,12 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "pipeline:sonar": "bash ./infra/scripts/run_sonar.sh",
+    "pipeline:terraform:init": "bash ./infra/scripts/run_terraform.sh init",
+    "pipeline:terraform:apply": "bash ./infra/scripts/run_terraform.sh apply",
+    "pipeline:ansible": "bash ./infra/scripts/run_ansible.sh",
+    "pipeline:deploy:lxd": "bash ./infra/scripts/deploy_lxd.sh"
   },
   "keywords": [],
   "author": "",

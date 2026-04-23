@@ -55,6 +55,6 @@ lxc exec "${CONTAINER_NAME}" -- bash -lc "rm -rf \"${APP_DIR}\"/* && tar -xzf \"
 lxc exec "${CONTAINER_NAME}" -- bash -lc "node --version && npm --version"
 
 lxc exec "${CONTAINER_NAME}" -- bash -lc "for pid in \$(ps -eo pid=,args= | awk '/[n]ode .*src\\/server\\.js/{print \$1}'); do kill \"\$pid\" || true; done"
-lxc exec "${CONTAINER_NAME}" -- bash -lc "cd \"${APP_DIR}/backend\" && nohup npm start >/var/log/devops-lab-backend.log 2>&1 &"
+lxc exec "${CONTAINER_NAME}" --mode=non-interactive -- bash -lc "cd \"${APP_DIR}/backend\" && nohup npm start >/var/log/devops-lab-backend.log 2>&1 &"
 
 echo "Deployment completed to LXD container '${CONTAINER_NAME}'."

@@ -64,6 +64,7 @@ async function getPipelineStatus(req, res) {
       status: job.status,
       currentStage: job.currentStage,
       stages: job.stages,
+      deployedUrl: job.deployedUrl,
       error: job.error,
       createdAt: job.createdAt,
       updatedAt: job.updatedAt,
@@ -100,10 +101,25 @@ async function getPipelineHistory(_req, res) {
   try {
     const jobs = await PipelineJob.find({})
       .sort({ createdAt: -1 })
-      .select("repoUrl filePath status stages currentStage createdAt updatedAt error")
+      .select("repoUrl filePath status stages currentStage deployedUrl createdAt updatedAt error")
       .lean();
 
     return res.json({ jobs });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+}
+
+async function deletePipelineHistoryItem(req, res) {
+  try {
+    const { id } = req.params;
+    const deletedJob = await PipelineJob.findByIdAndDelete(id).lean();
+
+    if (!deletedJob) {
+      return res.status(404).json({ message: "Pipeline job not found" });
+    }
+
+    return res.json({ message: "Pipeline history item deleted" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -114,4 +130,5 @@ module.exports = {
   getPipelineStatus,
   getPipelineLogs,
   getPipelineHistory,
+  deletePipelineHistoryItem,
 };

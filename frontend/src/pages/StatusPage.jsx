@@ -87,6 +87,19 @@ export default function StatusPage() {
         <p className="summary-line">
           Current Stage: <strong>{status?.currentStage || "queued"}</strong>
         </p>
+        {status?.deployedUrl && (
+          <p className="summary-line deployed-url-line">
+            Deployed URL:{" "}
+            <a
+              href={status.deployedUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="deployed-url-link"
+            >
+              {status.deployedUrl}
+            </a>
+          </p>
+        )}
         {status?.error && <p className="error-text">{status.error}</p>}
 
         <Link to="/history" className="ghost-link">

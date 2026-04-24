@@ -3,6 +3,18 @@ const { runCommand } = require("./commandRunner");
 const config = require("../config/env");
 
 const STAGE_ORDER = ["sonar", "terraform", "ansible", "deployment"];
+const URL_PATTERN = /(https?:\/\/[^\s"')]+)/i;
+
+function detectDeployedUrl(lines = []) {
+  for (const line of lines) {
+    const match = line.match(URL_PATTERN);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  return "";
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -44,6 +56,8 @@ async function runSimulatedStage(jobId, stage, messages) {
   await updateStage(jobId, stage, "success", {
     [`stages.${stage}.finishedAt`]: new Date(),
   });
+
+  return [];
 }
 
 async function executeRealStage(job, stage, command, options = {}) {
@@ -80,6 +94,8 @@ async function executeRealStage(job, stage, command, options = {}) {
   await updateStage(job._id, stage, "success", {
     [`stages.${stage}.finishedAt`]: new Date(),
   });
+
+  return stageOutput;
 }
 
 async function markRemainingAsSkipped(jobId, failedStage) {
@@ -104,6 +120,7 @@ async function runPipeline(jobId) {
     $set: {
       status: "running",
       currentStage: "sonar",
+      deployedUrl: "",
     },
   });
 
@@ -146,6 +163,8 @@ async function runPipeline(jobId) {
   };
 
   try {
+    let deploymentStageOutput = [];
+
     for (const stage of STAGE_ORDER) {
       const stageConfig = stageConfigs[stage];
 
@@ -162,16 +181,26 @@ async function runPipeline(jobId) {
               }
             : {};
 
-        await executeRealStage(job, stage, stageConfig.command, stageOptions);
+        const stageOutput = await executeRealStage(job, stage, stageConfig.command, stageOptions);
+
+        if (stage === "deployment") {
+          deploymentStageOutput = stageOutput;
+        }
       }
 
     }
+
+    const deployedUrl =
+      config.deployedAppUrl ||
+      detectDeployedUrl(deploymentStageOutput) ||
+      "";
 
     await PipelineJob.findByIdAndUpdate(jobId, {
       $set: {
         status: "success",
         currentStage: "completed",
         error: "",
+        deployedUrl,
       },
     });
   } catch (error) {

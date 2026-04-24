@@ -18,4 +18,5 @@ module.exports = {
   deploymentTarget: process.env.DEPLOYMENT_TARGET || "multipass",
   multipassCommand: process.env.MULTIPASS_COMMAND || "multipass launch",
   lxdCommand: process.env.LXD_COMMAND || "lxc launch ubuntu:22.04 app-instance",
+  deployedAppUrl: process.env.DEPLOYED_APP_URL || "http://10.100.219.50:3000/",
 };

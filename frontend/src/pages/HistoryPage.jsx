@@ -1,20 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import StatusBadge from "../components/StatusBadge";
-import { getPipelineHistory } from "../services/api";
-
-const COLORS = {
-  success: "#34d399",
-  failed: "#f87171",
-  running: "#38bdf8",
-  queued: "#64748b",
-};
+import { deletePipelineHistoryItem, getPipelineHistory } from "../services/api";
 
 export default function HistoryPage() {
   const [jobs, setJobs] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState("");
 
   async function fetchHistory() {
     try {
@@ -33,17 +26,23 @@ export default function HistoryPage() {
     fetchHistory();
   }, []);
 
-  const chartData = useMemo(() => {
-    const counts = jobs.reduce(
-      (acc, job) => {
-        acc[job.status] = (acc[job.status] || 0) + 1;
-        return acc;
-      },
-      { success: 0, failed: 0, running: 0, queued: 0 }
-    );
+  async function handleDelete(jobId) {
+    const confirmed = window.confirm("Delete this pipeline run from history?");
+    if (!confirmed) {
+      return;
+    }
 
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [jobs]);
+    try {
+      setDeletingId(jobId);
+      await deletePipelineHistoryItem(jobId);
+      setJobs((previousJobs) => previousJobs.filter((job) => job._id !== jobId));
+      setError("");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Failed to delete history item.");
+    } finally {
+      setDeletingId("");
+    }
+  }
 
   return (
     <section className="history-layout">
@@ -71,6 +70,7 @@ export default function HistoryPage() {
                   <th>Source</th>
                   <th>Status</th>
                   <th>Details</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -86,32 +86,22 @@ export default function HistoryPage() {
                         View details
                       </Link>
                     </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="danger-link-btn"
+                        onClick={() => handleDelete(job._id)}
+                        disabled={deletingId === job._id}
+                      >
+                        {deletingId === job._id ? "Deleting..." : "Delete"}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-      </div>
-
-      <div className="panel chart-panel">
-        <div className="panel-heading">
-          <h3>Run Distribution</h3>
-          <p>Success and failure trend across all runs.</p>
-        </div>
-
-        <div className="chart-box">
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={chartData} dataKey="value" nameKey="name" outerRadius={95} innerRadius={55}>
-                {chartData.map((entry) => (
-                  <Cell key={entry.name} fill={COLORS[entry.name] || "#9aa0ac"} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
       </div>
     </section>
   );

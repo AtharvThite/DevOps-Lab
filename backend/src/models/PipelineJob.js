@@ -27,6 +27,10 @@ const pipelineJobSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    deployedUrl: {
+      type: String,
+      default: "",
+    },
     status: {
       type: String,
       enum: ["queued", "running", "success", "failed"],

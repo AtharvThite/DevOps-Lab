@@ -5,6 +5,7 @@ const {
   getPipelineStatus,
   getPipelineLogs,
   getPipelineHistory,
+  deletePipelineHistoryItem,
 } = require("../controllers/pipelineController");
 
 const router = express.Router();
@@ -32,5 +33,6 @@ router.post("/run", upload.single("codeZip"), runPipeline);
 router.get("/status/:id", getPipelineStatus);
 router.get("/logs/:id", getPipelineLogs);
 router.get("/history", getPipelineHistory);
+router.delete("/history/:id", deletePipelineHistoryItem);
 
 module.exports = router;

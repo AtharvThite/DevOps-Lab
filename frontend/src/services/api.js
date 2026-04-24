@@ -38,4 +38,9 @@ export async function getPipelineHistory() {
   return response.data;
 }
 
+export async function deletePipelineHistoryItem(jobId) {
+  const response = await api.delete(`/pipeline/history/${jobId}`);
+  return response.data;
+}
+
 export default api;

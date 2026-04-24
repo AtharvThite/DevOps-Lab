@@ -29,3 +29,11 @@ bash ./infra/scripts/deploy_lxd.sh
 - `lxc`
 
 Install these on the machine where the backend server executes pipeline commands.
+
+## LXD Networking Persistence
+
+Terraform now provisions reproducible guest networking for the LXD app container so deployment survives container recreation without manual netplan edits.
+
+- Static IPv4, default gateway, and DNS are injected via cloud-init network config.
+- The LXD NIC reservation is also pinned with `ipv4.address` on the profile.
+- Tune values in `terraform/terraform.tfvars` (see `terraform/terraform.tfvars.example`), especially if your `lxdbr0` subnet differs.

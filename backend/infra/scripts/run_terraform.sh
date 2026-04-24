@@ -52,6 +52,22 @@ if [[ -n "${LXD_MEMORY:-}" ]]; then
   export TF_VAR_lxd_memory="${LXD_MEMORY}"
 fi
 
+if [[ -n "${LXD_STATIC_IPV4_ENABLED:-}" ]]; then
+  export TF_VAR_lxd_static_ipv4_enabled="${LXD_STATIC_IPV4_ENABLED}"
+fi
+
+if [[ -n "${LXD_IPV4_ADDRESS:-}" ]]; then
+  export TF_VAR_lxd_ipv4_address="${LXD_IPV4_ADDRESS}"
+fi
+
+if [[ -n "${LXD_IPV4_PREFIX:-}" ]]; then
+  export TF_VAR_lxd_ipv4_prefix="${LXD_IPV4_PREFIX}"
+fi
+
+if [[ -n "${LXD_IPV4_GATEWAY:-}" ]]; then
+  export TF_VAR_lxd_ipv4_gateway="${LXD_IPV4_GATEWAY}"
+fi
+
 case "${ACTION}" in
   init)
     terraform init -input=false

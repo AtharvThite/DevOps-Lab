@@ -5,3 +5,11 @@ lxd_storage_pool   = "default"
 lxd_network        = "lxdbr0"
 lxd_cpu            = 2
 lxd_memory         = "2GB"
+
+# Reproducible container networking (override these if your lxdbr0 subnet differs)
+lxd_static_ipv4_enabled = true
+lxd_ipv4_address        = "10.100.219.50"
+lxd_ipv4_prefix         = 24
+lxd_ipv4_gateway        = "10.100.219.1"
+lxd_dns_servers_ipv4    = ["1.1.1.1", "8.8.8.8"]
+lxd_dns_servers_ipv6    = ["2606:4700:4700::1111", "2001:4860:4860::8888"]

@@ -110,20 +110,25 @@ normalize_repo_url() {
 }
 
 ensure_container_dns() {
-  if lxc exec "${CONTAINER_NAME}" -- bash -lc 'getent hosts github.com >/dev/null 2>&1'; then
+  if lxc exec "${CONTAINER_NAME}" -- bash -lc 'getent ahosts github.com >/dev/null 2>&1'; then
     return 0
   fi
 
+  # Try a dual-stack resolver set because some hosts are IPv6-only or lack IPv4 routing.
   lxc exec "${CONTAINER_NAME}" -- bash -lc 'cp /etc/resolv.conf /etc/resolv.conf.bak 2>/dev/null || true; cat > /etc/resolv.conf <<EOF
 nameserver 1.1.1.1
 nameserver 8.8.8.8
+nameserver 2606:4700:4700::1111
+nameserver 2001:4860:4860::8888
 EOF'
 
-  if lxc exec "${CONTAINER_NAME}" -- bash -lc 'getent hosts github.com >/dev/null 2>&1'; then
+  if lxc exec "${CONTAINER_NAME}" -- bash -lc 'getent ahosts github.com >/dev/null 2>&1'; then
     return 0
   fi
 
   echo "Unable to resolve github.com from the container even after DNS fallback."
+  echo "Container route and resolver diagnostics:"
+  lxc exec "${CONTAINER_NAME}" -- bash -lc 'echo "--- /etc/resolv.conf ---"; cat /etc/resolv.conf; echo; echo "--- ip -4 route ---"; ip -4 route || true; echo; echo "--- ip -6 route ---"; ip -6 route || true'
   return 1
 }
 

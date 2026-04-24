@@ -46,7 +46,7 @@ async function runSimulatedStage(jobId, stage, messages) {
   });
 }
 
-async function executeRealStage(job, stage, command) {
+async function executeRealStage(job, stage, command, options = {}) {
   await updateStage(job._id, stage, "running", {
     [`stages.${stage}.startedAt`]: new Date(),
     currentStage: stage,
@@ -58,6 +58,7 @@ async function executeRealStage(job, stage, command) {
 
   await runCommand(command, {
     cwd: process.cwd(),
+    env: options.env,
     onLog: async (line) => {
       if (line) {
         stageOutput.push(line);
@@ -151,7 +152,17 @@ async function runPipeline(jobId) {
       if (config.simulatePipeline) {
         await runSimulatedStage(jobId, stage, stageConfig.logs);
       } else {
-        await executeRealStage(job, stage, stageConfig.command);
+        const stageOptions =
+          stage === "deployment"
+            ? {
+                env: {
+                  DEPLOY_SOURCE_URL: job.repoUrl || "",
+                  DEPLOY_SOURCE_PATH: job.filePath || "",
+                },
+              }
+            : {};
+
+        await executeRealStage(job, stage, stageConfig.command, stageOptions);
       }
 
     }

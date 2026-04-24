@@ -1,13 +1,16 @@
 const { spawn } = require("child_process");
 
 function runCommand(command, options = {}) {
-  const { cwd, onLog } = options;
+  const { cwd, onLog, env } = options;
 
   return new Promise((resolve, reject) => {
     const child = spawn(command, {
       cwd,
       shell: true,
-      env: process.env,
+      env: {
+        ...process.env,
+        ...(env || {}),
+      },
     });
 
     child.stdout.on("data", (data) => {

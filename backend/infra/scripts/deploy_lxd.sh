@@ -195,6 +195,20 @@ ensure_compose_dockerfile() {
   return 1
 }
 
+run_compose_up() {
+  local compose_workdir="$1"
+  local compose_command="$2"
+
+  if [[ "${compose_command}" == "docker-compose" ]]; then
+    lxc exec "${CONTAINER_NAME}" --mode=non-interactive -- bash -lc "cd \"${compose_workdir}\" && docker-compose down --remove-orphans || true"
+    lxc exec "${CONTAINER_NAME}" --mode=non-interactive -- bash -lc "docker ps -aq --filter 'label=com.docker.compose.project=source' | xargs -r docker rm -f || true"
+    lxc exec "${CONTAINER_NAME}" --mode=non-interactive -- bash -lc "cd \"${compose_workdir}\" && docker-compose up -d --build --force-recreate --remove-orphans"
+    return
+  fi
+
+  lxc exec "${CONTAINER_NAME}" --mode=non-interactive -- bash -lc "cd \"${compose_workdir}\" && ${compose_command} up -d --build --remove-orphans"
+}
+
 lxc start "${CONTAINER_NAME}" >/dev/null 2>&1 || true
 lxc exec "${CONTAINER_NAME}" -- mkdir -p "${APP_DIR}"
 lxc exec "${CONTAINER_NAME}" -- bash -lc "rm -rf \"${REMOTE_SOURCE_DIR}\""
@@ -222,7 +236,7 @@ if ! compose_cmd="$(ensure_compose_command)"; then
   exit 1
 fi
 
-lxc exec "${CONTAINER_NAME}" --mode=non-interactive -- bash -lc "cd \"${REMOTE_SOURCE_DIR}/${compose_rel_dir}\" && ${compose_cmd} up -d --build --remove-orphans"
+run_compose_up "${REMOTE_SOURCE_DIR}/${compose_rel_dir}" "${compose_cmd}"
 lxc exec "${CONTAINER_NAME}" --mode=non-interactive -- bash -lc "cd \"${REMOTE_SOURCE_DIR}/${compose_rel_dir}\" && ${compose_cmd} ps"
 
 echo "Compose deployment completed to LXD container '${CONTAINER_NAME}' from submitted repository."

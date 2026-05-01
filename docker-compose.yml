@@ -1,0 +1,84 @@
+services:
+  # ── MongoDB ──────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    container_name: devops-lab-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+
+  # ── Backend (Node + Express) ─────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: devops-lab-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongo
+    environment:
+      PORT: 5000
+      MONGO_URI: mongodb://mongo:27017/devops_automation
+      FRONTEND_ORIGIN: http://localhost:3000
+      SIMULATE_PIPELINE: "true"
+      SIMULATE_SONAR_FAIL: "false"
+      SONAR_FAIL_PATTERN: "QUALITY GATE STATUS: FAILED"
+      SONAR_HOST_URL: http://sonarqube:9000
+      SONAR_TOKEN: ""
+      NODE_ENV: production
+    volumes:
+      - backend_uploads:/app/uploads
+
+  # ── Frontend (React → Nginx) ─────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:5000
+    container_name: devops-lab-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  # ── SonarQube ─────────────────────────────────────────────
+  sonarqube:
+    image: sonarqube:10.6-community
+    container_name: devops-lab-sonarqube
+    restart: unless-stopped
+    depends_on:
+      - sonarqube-db
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonarqube
+      SONAR_JDBC_USERNAME: sonarqube
+      SONAR_JDBC_PASSWORD: sonarqube
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_extensions:/opt/sonarqube/extensions
+
+  # ── SonarQube Postgres DB ────────────────────────────────
+  sonarqube-db:
+    image: postgres:15
+    container_name: devops-lab-sonarqube-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sonarqube
+      POSTGRES_PASSWORD: sonarqube
+      POSTGRES_DB: sonarqube
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+
+volumes:
+  mongo_data:
+  backend_uploads:
+  sonarqube_data:
+  sonarqube_logs:
+  sonarqube_extensions:
+  postgresql_data:

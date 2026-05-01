@@ -1,0 +1,9 @@
+node_modules
+.env
+uploads/*
+!uploads/.gitkeep
+*.log
+.git
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*

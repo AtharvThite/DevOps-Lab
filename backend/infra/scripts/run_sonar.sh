@@ -2,7 +2,7 @@
 set -euo pipefail
 
 BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-REPO_ROOT="$(cd "${BACKEND_DIR}/.." && pwd)"
+REPO_ROOT="${REPO_ROOT:-$(cd "${BACKEND_DIR}/.." && pwd)}"
 SONAR_SETTINGS_FILE="${REPO_ROOT}/sonar-project.properties"
 
 if ! command -v sonar-scanner >/dev/null 2>&1; then
@@ -27,4 +27,7 @@ fi
 
 sonar-scanner \
   -Dproject.settings="${SONAR_SETTINGS_FILE}" \
-  -Dsonar.projectBaseDir="${REPO_ROOT}"
+  -Dsonar.projectBaseDir="${REPO_ROOT}" \
+  -Dsonar.working.directory="/tmp/.scannerwork" \
+  -Dsonar.host.url="${SONAR_HOST_URL}" \
+  -Dsonar.token="${SONAR_TOKEN}"

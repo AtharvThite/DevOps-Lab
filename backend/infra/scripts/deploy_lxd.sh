@@ -72,21 +72,21 @@ ensure_compose_command() {
     return 0
   fi
 
-  echo "No compose runtime found in container '${CONTAINER_NAME}'. Attempting to install one..."
+  echo "No compose runtime found in container '${CONTAINER_NAME}'. Attempting to install one..." >&2
 
   if ! lxc exec "${CONTAINER_NAME}" -- bash -lc 'command -v apt-get >/dev/null 2>&1'; then
-    echo "Container does not provide apt-get, cannot auto-install compose runtime."
+    echo "Container does not provide apt-get, cannot auto-install compose runtime." >&2
     return 1
   fi
 
-  lxc exec "${CONTAINER_NAME}" --mode=non-interactive -- bash -lc 'export DEBIAN_FRONTEND=noninteractive; apt-get update && (apt-get install -y podman podman-compose || apt-get install -y docker.io docker-compose)'
+  lxc exec "${CONTAINER_NAME}" --mode=non-interactive -- bash -lc 'export DEBIAN_FRONTEND=noninteractive; apt-get update >/dev/null 2>&1 && (apt-get install -y docker.io docker-compose-v2 docker-compose >/dev/null 2>&1 || apt-get install -y podman podman-compose >/dev/null 2>&1)' >&2
 
   if compose_cmd="$(detect_compose_command)"; then
     echo "${compose_cmd}"
     return 0
   fi
 
-  echo "Compose runtime is still unavailable after install attempt."
+  echo "Compose runtime is still unavailable after install attempt." >&2
   return 1
 }
 

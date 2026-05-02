@@ -18,20 +18,47 @@ services:
       - "5000:5000"
     depends_on:
       - mongo
+      - sonarqube
     environment:
       PORT: 5000
       MONGO_URI: mongodb://mongo:27017/devops_automation
       FRONTEND_ORIGIN: http://localhost:3000
-      SIMULATE_PIPELINE: "true"
+      SIMULATE_PIPELINE: "false"
       SIMULATE_SONAR_FAIL: "false"
       SONAR_FAIL_PATTERN: "QUALITY GATE STATUS: FAILED"
       SONAR_HOST_URL: http://sonarqube:9000
-      SONAR_TOKEN: ""
+      SONAR_TOKEN: "${SONAR_TOKEN:-}"
+      SONAR_COMMAND: bash ./infra/scripts/run_sonar.sh
+      TERRAFORM_INIT_COMMAND: bash ./infra/scripts/run_terraform.sh init
+      TERRAFORM_APPLY_COMMAND: bash ./infra/scripts/run_terraform.sh apply
+      ANSIBLE_COMMAND: bash ./infra/scripts/run_ansible.sh
+      DEPLOYMENT_TARGET: lxd
+      LXD_COMMAND: bash ./infra/scripts/deploy_lxd.sh
+      DEPLOYED_APP_URL: "${DEPLOYED_APP_URL:-http://10.100.219.50:3000/}"
+      LXD_CONTAINER_NAME: "${LXD_CONTAINER_NAME:-devops-lab-app}"
+      LXD_PROFILE_NAME: "${LXD_PROFILE_NAME:-devops-lab-profile}"
+      LXD_IMAGE: "${LXD_IMAGE:-ubuntu:22.04}"
+      LXD_STORAGE_POOL: "${LXD_STORAGE_POOL:-default}"
+      LXD_NETWORK: "${LXD_NETWORK:-lxdbr0}"
+      LXD_CPU: "${LXD_CPU:-2}"
+      LXD_MEMORY: "${LXD_MEMORY:-2GB}"
+      APP_DIR: "${APP_DIR:-/opt/devops-lab}"
+      REPO_ROOT: /repo
+      LXD_GROUP_REEXEC: "1"
       NODE_ENV: production
+    security_opt:
+      - label=disable
     volumes:
       - backend_uploads:/app/uploads
+      # Mount the entire repo so sonar-scanner can scan source files
+      - ./:/repo:rw,Z
+      # Mount the LXD socket from the host proxy
+      - ./lxd-proxy.sock:/var/snap/lxd/common/lxd/unix.socket:rw
+      # Share terraform state across rebuilds
+      - terraform_state:/app/infra/terraform
 
   # ── Frontend (React → Nginx) ─────────────────────────────
+
   frontend:
     build:
       context: ./frontend
@@ -78,7 +105,9 @@ services:
 volumes:
   mongo_data:
   backend_uploads:
+  terraform_state:
   sonarqube_data:
   sonarqube_logs:
   sonarqube_extensions:
   postgresql_data:
+  lxd_socket_dir:

@@ -10,11 +10,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Configure subuid and subgid for root (container runs as root) and jenkins
-RUN echo "root:100000:65536" >> /etc/subuid && \
-    echo "root:100000:65536" >> /etc/subgid && \
-    echo "jenkins:100000:65536" >> /etc/subuid && \
-    echo "jenkins:100000:65536" >> /etc/subgid
+# Disable user namespace remapping — not possible inside a container.
+# Clear subuid/subgid so Podman doesn't attempt newuidmap, and
+# remove setuid bit from newuidmap/newgidmap as a safety net.
+RUN truncate -s 0 /etc/subuid /etc/subgid && \
+    chmod a-s /usr/bin/newuidmap /usr/bin/newgidmap 2>/dev/null || true
 
 # --- Configure Podman Storage for nested builds ---
 # Write storage.conf to BOTH /etc/containers/ and /usr/share/containers/

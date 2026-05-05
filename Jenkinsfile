@@ -82,15 +82,15 @@ pipeline {
             steps {
                 echo "☁️ Authenticating and pushing to Docker Hub..."
                 // Log in securely using the credentials injected by Jenkins
-                sh 'podman login docker.io -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW'
+                sh 'podman --storage-driver=vfs login docker.io -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW'
                 
                 // Push the image to your repository
-                sh 'podman push $IMAGE_NAME'
+                sh 'podman --storage-driver=vfs push $IMAGE_NAME'
             }
             post {
                 always {
                     // ALWAYS run logout, even if the push fails, to secure your credentials
-                    sh 'podman logout docker.io'
+                    sh 'podman --storage-driver=vfs logout docker.io || true'
                 }
             }
         }

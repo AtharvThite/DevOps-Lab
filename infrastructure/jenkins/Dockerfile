@@ -16,11 +16,8 @@ RUN echo "jenkins:100000:65536" >> /etc/subuid && \
 
 # --- NEW: Configure Podman Storage ---
 # Use VFS driver and ignore chown errors for nested rootless builds
-RUN mkdir -p /etc/containers && \
-    echo '[storage]' > /etc/containers/storage.conf && \
-    echo 'driver = "vfs"' >> /etc/containers/storage.conf && \
-    echo '[storage.options.vfs]' >> /etc/containers/storage.conf && \
-    echo 'ignore_chown_errors = "true"' >> /etc/containers/storage.conf
+RUN mkdir -p /etc/containers /var/lib/containers/storage /run/containers/storage && \
+    printf '[storage]\ndriver = "vfs"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n\n[storage.options.vfs]\nignore_chown_errors = "true"\n' > /etc/containers/storage.conf
 
 # SonarScanner CLI
 RUN curl -fsSL -o /tmp/sonar-scanner.zip \

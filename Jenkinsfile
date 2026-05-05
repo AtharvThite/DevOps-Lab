@@ -70,25 +70,37 @@ pipeline {
             steps {
                 echo "🚀 Building the unified Docker image using Podman..."
                 
-                // Wipe ALL old Podman storage databases to avoid graph driver mismatch.
-                // Jenkins runs as root, so Podman uses /var/lib/containers/storage, NOT ~/.local/...
+                // Wipe old storage to avoid graph driver mismatch, then recreate
                 sh 'rm -rf /var/lib/containers/storage /run/containers/storage'
                 sh 'mkdir -p /var/lib/containers/storage /run/containers/storage'
                 
-                // Build using chroot isolation (required for nested containers)
-                sh 'BUILDAH_ISOLATION=chroot podman build --format docker -t $IMAGE_NAME .'
+                // Pass storage paths directly on CLI to bypass any config file issues
+                sh '''BUILDAH_ISOLATION=chroot podman \
+                      --root /var/lib/containers/storage \
+                      --runroot /run/containers/storage \
+                      --storage-driver vfs \
+                      build --format docker -t $IMAGE_NAME .'''
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
                 echo "☁️ Authenticating and pushing to Docker Hub..."
-                sh 'podman login docker.io -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW'
-                sh 'podman push $IMAGE_NAME'
+                sh '''podman --root /var/lib/containers/storage \
+                      --runroot /run/containers/storage \
+                      --storage-driver vfs \
+                      login docker.io -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW'''
+                sh '''podman --root /var/lib/containers/storage \
+                      --runroot /run/containers/storage \
+                      --storage-driver vfs \
+                      push $IMAGE_NAME'''
             }
             post {
                 always {
-                    sh 'podman logout docker.io || true'
+                    sh '''podman --root /var/lib/containers/storage \
+                          --runroot /run/containers/storage \
+                          --storage-driver vfs \
+                          logout docker.io || true'''
                 }
             }
         }

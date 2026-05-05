@@ -72,8 +72,8 @@ pipeline {
                 
                 // Wipe ALL old Podman storage databases to avoid graph driver mismatch.
                 // Jenkins runs as root, so Podman uses /var/lib/containers/storage, NOT ~/.local/...
-                sh 'rm -rf /var/lib/containers/storage || true'
-                sh 'rm -rf /run/containers/storage || true'
+                sh 'rm -rf /var/lib/containers/storage /run/containers/storage'
+                sh 'mkdir -p /var/lib/containers/storage /run/containers/storage'
                 
                 // Build using chroot isolation (required for nested containers)
                 sh 'BUILDAH_ISOLATION=chroot podman build --format docker -t $IMAGE_NAME .'

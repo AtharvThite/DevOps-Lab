@@ -10,14 +10,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Configure subuid and subgid for the jenkins user
-RUN echo "jenkins:100000:65536" >> /etc/subuid && \
+# Configure subuid and subgid for root (container runs as root) and jenkins
+RUN echo "root:100000:65536" >> /etc/subuid && \
+    echo "root:100000:65536" >> /etc/subgid && \
+    echo "jenkins:100000:65536" >> /etc/subuid && \
     echo "jenkins:100000:65536" >> /etc/subgid
 
-# --- NEW: Configure Podman Storage ---
-# Use VFS driver and ignore chown errors for nested rootless builds
-RUN mkdir -p /etc/containers /var/lib/containers/storage /run/containers/storage && \
-    printf '[storage]\ndriver = "vfs"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n\n[storage.options.vfs]\nignore_chown_errors = "true"\n' > /etc/containers/storage.conf
+# --- Configure Podman Storage for nested builds ---
+# Write storage.conf to BOTH /etc/containers/ and /usr/share/containers/
+# to ensure Podman finds it no matter which path it checks
+RUN mkdir -p /etc/containers /usr/share/containers /var/lib/containers/storage /run/containers/storage && \
+    echo '[storage]' > /etc/containers/storage.conf && \
+    echo 'driver = "vfs"' >> /etc/containers/storage.conf && \
+    echo 'runroot = "/run/containers/storage"' >> /etc/containers/storage.conf && \
+    echo 'graphroot = "/var/lib/containers/storage"' >> /etc/containers/storage.conf && \
+    echo '' >> /etc/containers/storage.conf && \
+    echo '[storage.options.vfs]' >> /etc/containers/storage.conf && \
+    echo 'ignore_chown_errors = "true"' >> /etc/containers/storage.conf && \
+    cp /etc/containers/storage.conf /usr/share/containers/storage.conf
 
 # SonarScanner CLI
 RUN curl -fsSL -o /tmp/sonar-scanner.zip \

@@ -70,8 +70,8 @@ pipeline {
             steps {
                 echo "🚀 Building the unified Docker image using Podman..."
                 
-                // Write a fresh storage config and point Podman to it.
-                // This bypasses ALL existing config files that may be broken.
+                // Write a fresh storage config to ALL locations Podman might read from.
+                // The env var handles the outer command, the system files handle internal RUN steps.
                 sh '''
                     rm -rf /tmp/podman-graph /tmp/podman-run
                     mkdir -p /tmp/podman-graph /tmp/podman-run
@@ -85,6 +85,9 @@ graphroot = "/tmp/podman-graph"
 [storage.options.vfs]
 ignore_chown_errors = "true"
 STORAGECONF
+
+                    cp /tmp/podman-storage.conf /etc/containers/storage.conf
+                    cp /tmp/podman-storage.conf /usr/share/containers/storage.conf 2>/dev/null || true
 
                     CONTAINERS_STORAGE_CONF=/tmp/podman-storage.conf \
                     BUILDAH_ISOLATION=chroot \

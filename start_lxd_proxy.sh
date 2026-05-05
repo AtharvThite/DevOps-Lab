@@ -4,8 +4,8 @@ set -e
 PROXY_SOCK="./lxd-proxy.sock"
 LXD_SOCK="/var/snap/lxd/common/lxd/unix.socket"
 
-# Clean up any stale proxy socket
-rm -f "$PROXY_SOCK"
+# Clean up any stale proxy socket (or directory accidentally created by podman)
+rm -rf "$PROXY_SOCK"
 
 echo "Starting LXD socket proxy..."
 echo "This forwards your user's LXD access to the rootless Podman container."

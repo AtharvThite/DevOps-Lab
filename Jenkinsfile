@@ -70,27 +70,25 @@ pipeline {
             steps {
                 echo "🚀 Building the unified Docker image using Podman..."
                 
-                // 1. Force Podman to reload the UID/GID mappings we added to the container
-                sh 'rm -rf ~/.local/share/containers/storage || true'
+                // Wipe ALL old Podman storage databases to avoid graph driver mismatch.
+                // Jenkins runs as root, so Podman uses /var/lib/containers/storage, NOT ~/.local/...
+                sh 'rm -rf /var/lib/containers/storage || true'
+                sh 'rm -rf /run/containers/storage || true'
                 
-                // 2. Build using chroot isolation and force the VFS driver to bypass nested permission errors
-                sh 'BUILDAH_ISOLATION=chroot podman build --storage-driver=vfs --format docker -t $IMAGE_NAME .'
+                // Build using chroot isolation (required for nested containers)
+                sh 'BUILDAH_ISOLATION=chroot podman build --format docker -t $IMAGE_NAME .'
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
                 echo "☁️ Authenticating and pushing to Docker Hub..."
-                // Log in securely using the credentials injected by Jenkins
-                sh 'podman --storage-driver=vfs login docker.io -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW'
-                
-                // Push the image to your repository
-                sh 'podman --storage-driver=vfs push $IMAGE_NAME'
+                sh 'podman login docker.io -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW'
+                sh 'podman push $IMAGE_NAME'
             }
             post {
                 always {
-                    // ALWAYS run logout, even if the push fails, to secure your credentials
-                    sh 'podman --storage-driver=vfs logout docker.io || true'
+                    sh 'podman logout docker.io || true'
                 }
             }
         }

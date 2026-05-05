@@ -69,8 +69,12 @@ pipeline {
         stage('Build Image') {
             steps {
                 echo "🚀 Building the unified Docker image using Podman..."
-                // Build using Podman, forcing the docker format for compatibility
-                sh 'podman build --format docker -t $IMAGE_NAME .'
+                
+                // 1. Force Podman to reload the UID/GID mappings we added to the container
+                sh 'podman system migrate || true'
+                
+                // 2. Build using chroot isolation and force the VFS driver to bypass nested permission errors
+                sh 'BUILDAH_ISOLATION=chroot podman build --storage-driver=vfs --format docker -t $IMAGE_NAME .'
             }
         }
 

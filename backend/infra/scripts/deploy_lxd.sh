@@ -196,8 +196,8 @@ ensure_compose_dockerfile() {
     return 0
   fi
 
-  echo "No Dockerfile found in the compose directory."
-  return 1
+  echo "No Dockerfile found in the compose root directory. Assuming compose file handles build contexts in subdirectories."
+  return 0
 }
 
 run_compose_up() {

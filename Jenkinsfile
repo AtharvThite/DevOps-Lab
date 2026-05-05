@@ -71,7 +71,7 @@ pipeline {
                 echo "🚀 Building the unified Docker image using Podman..."
                 
                 // 1. Force Podman to reload the UID/GID mappings we added to the container
-                sh 'podman system migrate || true'
+                sh 'rm -rf ~/.local/share/containers/storage || true'
                 
                 // 2. Build using chroot isolation and force the VFS driver to bypass nested permission errors
                 sh 'BUILDAH_ISOLATION=chroot podman build --storage-driver=vfs --format docker -t $IMAGE_NAME .'

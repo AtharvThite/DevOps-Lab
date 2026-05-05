@@ -105,7 +105,9 @@ STORAGECONF
                 '''
                 sh '''
                     CONTAINERS_STORAGE_CONF=/tmp/podman-storage.conf \
-                    podman push $IMAGE_NAME
+                    podman push --format v2s2 $IMAGE_NAME || \
+                    CONTAINERS_STORAGE_CONF=/tmp/podman-storage.conf \
+                    podman push --format v2s2 $IMAGE_NAME
                 '''
             }
             post {

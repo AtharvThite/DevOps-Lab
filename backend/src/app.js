@@ -28,4 +28,11 @@ app.use((error, _req, res, _next) => {
   return res.status(500).json({ message: error.message || "Internal server error" });
 });
 
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Catch-all route: Send any unmatched routes to the React frontend
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public', 'index.html'));
+});
+
 module.exports = app;

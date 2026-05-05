@@ -2,33 +2,29 @@ pipeline {
     agent any
 
     environment {
-        // Project Metadata
+        // Use the workspace directory where Jenkins clones the code from GitHub
         REPO_ROOT = "${WORKSPACE}"
         LXD_GROUP_REEXEC = "1"
         DEPLOY_SOURCE_URL = "https://github.com/AtharvThite/DevOps-Lab.git"
         
-        // Docker Hub Credentials (Ensure ID matches Jenkins Global Credentials)
+        // Ensure this ID matches exactly what you named the credential in Jenkins
         DOCKERHUB_CREDS = credentials('dockerhub-credentials')
         IMAGE_NAME = "docker.io/atharvthite05/devops-lab:latest"
-
-        // Isolated Podman Storage (Avoids database driver mismatch errors)
-        P_ROOT = "${WORKSPACE}/.podman-root"
-        P_RUN = "${WORKSPACE}/.podman-runroot"
     }
 
     stages {
-        // 1. Setup Phase
+        // 1. MUST BE FIRST: Pull the latest code before trying to run any scripts!
         stage('Checkout Code') {
             steps {
-                checkout scm[cite: 1]
+                checkout scm
             }
         }
 
-        // 2. Testing & Infrastructure Phase
+        // 2. Run Tests and Infrastructure scripts
         stage('Code Quality (SonarQube)') {
             steps {
                 dir('backend') {
-                    sh 'bash ./infra/scripts/run_sonar.sh'[cite: 1]
+                    sh 'bash ./infra/scripts/run_sonar.sh'
                 }
             }
         }
@@ -36,8 +32,8 @@ pipeline {
         stage('Infrastructure (Terraform Init)') {
             steps {
                 dir('backend') {
-                    sh 'cp /app/infra/terraform/terraform.tfstate ./infra/terraform/terraform.tfstate || true'[cite: 1]
-                    sh 'bash ./infra/scripts/run_terraform.sh init'[cite: 1]
+                    sh 'cp /app/infra/terraform/terraform.tfstate ./infra/terraform/terraform.tfstate || true'
+                    sh 'bash ./infra/scripts/run_terraform.sh init'
                 }
             }
         }
@@ -45,8 +41,8 @@ pipeline {
         stage('Infrastructure (Terraform Apply)') {
             steps {
                 dir('backend') {
-                    sh 'bash ./infra/scripts/run_terraform.sh apply'[cite: 1]
-                    sh 'cp ./infra/terraform/terraform.tfstate /app/infra/terraform/terraform.tfstate || true'[cite: 1]
+                    sh 'bash ./infra/scripts/run_terraform.sh apply'
+                    sh 'cp ./infra/terraform/terraform.tfstate /app/infra/terraform/terraform.tfstate || true'
                 }
             }
         }
@@ -54,7 +50,7 @@ pipeline {
         stage('Configuration (Ansible)') {
             steps {
                 dir('backend') {
-                    sh 'bash ./infra/scripts/run_ansible.sh'[cite: 1]
+                    sh 'bash ./infra/scripts/run_ansible.sh'
                 }
             }
         }
@@ -62,46 +58,39 @@ pipeline {
         stage('Deployment (LXD)') {
             steps {
                 dir('backend') {
-                    sh 'npm install --omit=dev'[cite: 1]
-                    sh 'bash ./infra/scripts/deploy_lxd.sh'[cite: 1]
+                    // The deploy script requires backend/node_modules to exist as a sanity check
+                    sh 'npm install --omit=dev'
+                    sh 'bash ./infra/scripts/deploy_lxd.sh'
                 }
             }
         }
 
-        // 3. Artifact Packaging Phase
-        stage('Build Unified Image') {
+        // 3. Build and Push the Unified Application Image
+        stage('Build Image') {
             steps {
-                echo "🚀 Resetting storage and building image in isolated root..."
-                // Clean any previous build artifacts
-                sh "rm -rf ${P_ROOT} ${P_RUN} && mkdir -p ${P_ROOT} ${P_RUN}"[cite: 1]
+                echo "🚀 Building the unified Docker image using Podman..."
                 
-                // Build using VFS driver and Chroot isolation to bypass nested container restrictions
-                sh """
-                    BUILDAH_ISOLATION=chroot podman \
-                    --root ${P_ROOT} \
-                    --runroot ${P_RUN} \
-                    --storage-driver vfs \
-                    build --format docker -t $IMAGE_NAME .
-                """[cite: 1]
+                // 1. Force Podman to reload the UID/GID mappings we added to the container
+                sh 'rm -rf ~/.local/share/containers/storage || true'
+                
+                // 2. Build using chroot isolation and force the VFS driver to bypass nested permission errors
+                sh 'BUILDAH_ISOLATION=chroot podman build --storage-driver=vfs --format docker -t $IMAGE_NAME .'
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
                 echo "☁️ Authenticating and pushing to Docker Hub..."
-                // Use the same isolated root so Podman can find the image we just built
-                sh """
-                    podman --root ${P_ROOT} --runroot ${P_RUN} \
-                    login docker.io -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW
-                """[cite: 1]
+                // Log in securely using the credentials injected by Jenkins
+                sh 'podman --storage-driver=vfs login docker.io -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW'
                 
-                sh "podman --root ${P_ROOT} --runroot ${P_RUN} push $IMAGE_NAME"[cite: 1]
+                // Push the image to your repository
+                sh 'podman --storage-driver=vfs push $IMAGE_NAME'
             }
             post {
                 always {
-                    // Cleanup credentials and temporary storage
-                    sh "podman --root ${P_ROOT} logout docker.io || true"[cite: 1]
-                    sh "rm -rf ${P_ROOT} ${P_RUN}"[cite: 1]
+                    // ALWAYS run logout, even if the push fails, to secure your credentials
+                    sh 'podman --storage-driver=vfs logout docker.io || true'
                 }
             }
         }
@@ -109,10 +98,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Pipeline Success: Infrastructure deployed and Unified Image pushed to Docker Hub."[cite: 1]
+            echo "✅ Pipeline completed successfully! Infrastructure updated and image pushed."
         }
         failure {
-            echo "❌ Pipeline Failure: Check console output for specific error logs."[cite: 1]
+            echo "❌ Pipeline failed. Please check the console output for details."
         }
     }
 }

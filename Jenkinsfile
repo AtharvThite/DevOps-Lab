@@ -91,7 +91,7 @@ STORAGECONF
 
                     CONTAINERS_STORAGE_CONF=/tmp/podman-storage.conf \
                     BUILDAH_ISOLATION=chroot \
-                    podman build --format docker -t $IMAGE_NAME .
+                    podman build --userns=host --format docker -t $IMAGE_NAME .
                 '''
             }
         }

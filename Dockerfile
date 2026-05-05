@@ -31,7 +31,7 @@ COPY backend/ ./
 COPY --from=frontend-builder /app/frontend/dist ./public
 
 # Expose the backend port (adjust if your backend uses a different port)
-EXPOSE 5000
+EXPOSE 5173
 
 # Start the unified server
 CMD ["npm", "start"]

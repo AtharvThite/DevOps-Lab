@@ -32,7 +32,7 @@ app.use((error, _req, res, _next) => {
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Catch-all route: Send any unmatched routes to the React frontend
-app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 

@@ -4,6 +4,7 @@ pipeline {
     environment {
         // Use the workspace directory where Jenkins clones the code from GitHub
         REPO_ROOT = "${WORKSPACE}"
+        LXD_GROUP_REEXEC = "1"
     }
 
     stages {

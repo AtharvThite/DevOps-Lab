@@ -6,6 +6,9 @@ A full-stack DevOps automation app that simulates or executes a CI/CD workflow:
 2. Terraform infrastructure provisioning
 3. Ansible server configuration
 4. LXD deployment
+5. Automated Docker image build & push via Podman
+
+We support both **manual execution** (via the Node.js backend) and **fully automated CI/CD** (via Jenkins).
 
 ## Tech Stack
 
@@ -100,10 +103,11 @@ cd DevOps-Lab
 
 ## Run the Application
 
-### 1) Start SonarQube
+### 1) Start Infrastructure Services (Jenkins & SonarQube)
+
+We provide a fully containerized environment for the tools via `docker-compose.yml`. This includes Jenkins (with built-in tools) and SonarQube.
 
 ```bash
-cd infrastructure/sonarqube
 docker compose up -d
 ```
 
@@ -113,7 +117,10 @@ If you use Podman instead of Docker, run:
 podman compose up -d
 ```
 
+> **Note on nested Podman builds:** The Jenkins container is configured to run in privileged mode so it can perform rootless Podman-in-Podman image builds during the CI/CD pipeline.
+
 Then open `http://localhost:9000`, log in with `admin` / `admin`, create a project, and generate a token.
+Jenkins is available at `http://localhost:8080`.
 
 ### 2) Configure the backend
 
@@ -196,3 +203,21 @@ bash ./infra/scripts/deploy_lxd.sh
 - Dashboard pages: Home, Pipeline Trigger, Live Status, History
 - Color-coded statuses and progress indicators
 - Error handling in API and UI
+
+## Automated CI/CD Pipeline (Jenkins)
+
+This project contains a fully declarative `Jenkinsfile` for automating the CI/CD pipeline. 
+
+### Pipeline Stages
+1. **Checkout Code**: Clones the repo automatically on Jenkins.
+2. **Code Quality**: Runs `sonar-scanner`.
+3. **Infrastructure**: Runs `terraform init` and `terraform apply`.
+4. **Configuration**: Runs `ansible-playbook` to configure hosts.
+5. **Deployment**: Deploys via LXD container APIs.
+6. **Build Image**: Uses `podman` inside the Jenkins container (using chroot isolation and vfs storage) to build the multi-stage Dockerfile.
+7. **Push to Docker Hub**: Authenticates and pushes the finalized image using `v2s2` format.
+
+### Setting up Jenkins
+1. Go to `http://localhost:8080` and complete the initial setup (get the admin password from `docker compose logs jenkins`).
+2. Add your Docker Hub credentials in Jenkins with the ID `dockerhub-credentials`.
+3. Create a new Pipeline job and point it to the Git repository. The pipeline will automatically read the `Jenkinsfile` and execute the deployment.

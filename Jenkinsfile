@@ -5,7 +5,7 @@ pipeline {
         // Use the workspace directory where Jenkins clones the code from GitHub
         REPO_ROOT = "${WORKSPACE}"
         LXD_GROUP_REEXEC = "1"
-        DEPLOY_SOURCE_PATH = "${WORKSPACE}"
+        DEPLOY_SOURCE_URL = "https://github.com/AtharvThite/DevOps-Lab.git"
     }
 
     stages {

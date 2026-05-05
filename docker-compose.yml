@@ -130,6 +130,7 @@ services:
       - terraform_state:/app/infra/terraform
     security_opt:
       - label=disable
+    privileged: true
 
 volumes:
   jenkins_home:

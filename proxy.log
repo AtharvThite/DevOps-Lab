@@ -996,3 +996,65 @@
 2026/05/05 21:39:13 socat[255742] E read(6, 0x557f44751000, 8192): Connection reset by peer
 2026/05/05 21:39:13 socat[255793] E read(6, 0x557f44751000, 8192): Connection reset by peer
 2026/05/05 21:39:25 socat[256463] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:16 socat[275911] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:16 socat[275913] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:16 socat[275936] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:16 socat[275937] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:18 socat[276028] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:18 socat[276064] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:19 socat[276120] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:19 socat[22200] W waitpid(-1, {}, WNOHANG): no (more) child has exited
+2026/05/05 21:50:19 socat[276170] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:19 socat[276229] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:22 socat[276578] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:23 socat[276644] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:23 socat[276726] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:23 socat[22200] W waitpid(-1, {}, WNOHANG): no (more) child has exited
+2026/05/05 21:50:26 socat[276826] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:26 socat[276833] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:26 socat[276847] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:26 socat[22200] W waitpid(-1, {}, WNOHANG): no (more) child has exited
+2026/05/05 21:50:26 socat[276870] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:27 socat[276899] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:27 socat[276930] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:27 socat[276958] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:32 socat[277012] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:32 socat[277049] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:32 socat[277082] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:32 socat[277112] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:32 socat[22200] W waitpid(-1, {}, WNOHANG): no (more) child has exited
+2026/05/05 21:50:32 socat[277141] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:50:32 socat[277190] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:52:53 socat[278844] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 21:52:54 socat[22200] W waitpid(-1, {}, WNOHANG): no (more) child has exited
+2026/05/05 22:09:15 socat[283193] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:15 socat[283194] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:15 socat[283218] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:15 socat[283219] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:16 socat[283280] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:16 socat[283316] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:16 socat[283371] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:16 socat[283421] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:17 socat[283479] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:20 socat[283878] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:20 socat[283940] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:20 socat[22200] W waitpid(-1, {}, WNOHANG): no (more) child has exited
+2026/05/05 22:09:20 socat[283988] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:21 socat[22200] W waitpid(-1, {}, WNOHANG): no (more) child has exited
+2026/05/05 22:09:22 socat[284074] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:22 socat[284081] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:22 socat[284091] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:22 socat[284116] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:22 socat[284146] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:22 socat[284174] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:22 socat[284204] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:24 socat[284252] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:24 socat[284286] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:24 socat[22200] W waitpid(-1, {}, WNOHANG): no (more) child has exited
+2026/05/05 22:09:24 socat[284319] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:24 socat[22200] W waitpid(-1, {}, WNOHANG): no (more) child has exited
+2026/05/05 22:09:24 socat[284349] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:24 socat[284375] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:24 socat[284425] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:36 socat[285066] E read(6, 0x557f44751000, 8192): Connection reset by peer
+2026/05/05 22:09:36 socat[22200] W waitpid(-1, {}, WNOHANG): no (more) child has exited

@@ -2,13 +2,25 @@ FROM jenkins/jenkins:lts-jdk17
 
 USER root
 
-# Install system dependencies, Node.js, and Podman
+# Install system dependencies, Node.js, Podman, and uidmap
 RUN apt-get update && apt-get install -y --no-install-recommends \
       curl unzip git tar xz-utils ca-certificates gnupg lsb-release \
-      python3 python3-pip python3-venv pipx openssh-client podman \
+      python3 python3-pip python3-venv pipx openssh-client podman uidmap \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
+
+# Configure subuid and subgid for the jenkins user
+RUN echo "jenkins:100000:65536" >> /etc/subuid && \
+    echo "jenkins:100000:65536" >> /etc/subgid
+
+# --- NEW: Configure Podman Storage ---
+# Use VFS driver and ignore chown errors for nested rootless builds
+RUN mkdir -p /etc/containers && \
+    echo '[storage]' > /etc/containers/storage.conf && \
+    echo 'driver = "vfs"' >> /etc/containers/storage.conf && \
+    echo '[storage.options.vfs]' >> /etc/containers/storage.conf && \
+    echo 'ignore_chown_errors = "true"' >> /etc/containers/storage.conf
 
 # SonarScanner CLI
 RUN curl -fsSL -o /tmp/sonar-scanner.zip \
@@ -29,13 +41,9 @@ ENV PIPX_HOME=/opt/pipx
 ENV PIPX_BIN_DIR=/usr/local/bin
 RUN pipx install ansible-core
 
-# LXC client (standalone binary from Canonical)
+# LXC client
 RUN curl -fsSL -o /usr/local/bin/lxc \
       https://github.com/canonical/lxd/releases/download/lxd-5.21.4/bin.linux.lxc.x86_64 \
     && chmod +x /usr/local/bin/lxc
-
-# Make sure jenkins user has right permissions if needed (LXD uses proxy socket, so rw volume is enough usually, or group id 1000)
-# We might need to handle LXD_GROUP_REEXEC or just run as root depending on the socket permissions,
-# but we'll try running as jenkins first, since the backend works that way with security_opt label=disable.
 
 USER jenkins

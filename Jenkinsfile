@@ -70,37 +70,47 @@ pipeline {
             steps {
                 echo "🚀 Building the unified Docker image using Podman..."
                 
-                // Wipe old storage to avoid graph driver mismatch, then recreate
-                sh 'rm -rf /var/lib/containers/storage /run/containers/storage'
-                sh 'mkdir -p /var/lib/containers/storage /run/containers/storage'
-                
-                // Pass storage paths directly on CLI to bypass any config file issues
-                sh '''BUILDAH_ISOLATION=chroot podman \
-                      --root /var/lib/containers/storage \
-                      --runroot /run/containers/storage \
-                      --storage-driver vfs \
-                      build --format docker -t $IMAGE_NAME .'''
+                // Write a fresh storage config and point Podman to it.
+                // This bypasses ALL existing config files that may be broken.
+                sh '''
+                    rm -rf /tmp/podman-graph /tmp/podman-run
+                    mkdir -p /tmp/podman-graph /tmp/podman-run
+
+                    cat > /tmp/podman-storage.conf << 'STORAGECONF'
+[storage]
+driver = "vfs"
+runroot = "/tmp/podman-run"
+graphroot = "/tmp/podman-graph"
+
+[storage.options.vfs]
+ignore_chown_errors = "true"
+STORAGECONF
+
+                    CONTAINERS_STORAGE_CONF=/tmp/podman-storage.conf \
+                    BUILDAH_ISOLATION=chroot \
+                    podman build --format docker -t $IMAGE_NAME .
+                '''
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
                 echo "☁️ Authenticating and pushing to Docker Hub..."
-                sh '''podman --root /var/lib/containers/storage \
-                      --runroot /run/containers/storage \
-                      --storage-driver vfs \
-                      login docker.io -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW'''
-                sh '''podman --root /var/lib/containers/storage \
-                      --runroot /run/containers/storage \
-                      --storage-driver vfs \
-                      push $IMAGE_NAME'''
+                sh '''
+                    CONTAINERS_STORAGE_CONF=/tmp/podman-storage.conf \
+                    podman login docker.io -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW
+                '''
+                sh '''
+                    CONTAINERS_STORAGE_CONF=/tmp/podman-storage.conf \
+                    podman push $IMAGE_NAME
+                '''
             }
             post {
                 always {
-                    sh '''podman --root /var/lib/containers/storage \
-                          --runroot /run/containers/storage \
-                          --storage-driver vfs \
-                          logout docker.io || true'''
+                    sh '''
+                        CONTAINERS_STORAGE_CONF=/tmp/podman-storage.conf \
+                        podman logout docker.io || true
+                    '''
                 }
             }
         }

@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const pipelineRoutes = require("./routes/pipelineRoutes");
 const config = require("./config/env");
+const path = require('path');
 
 const app = express();
 

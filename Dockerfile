@@ -1,7 +1,7 @@
 # ==========================================
 # Stage 1: Build the Vite/React Frontend
 # ==========================================
-FROM node:18-alpine AS frontend-builder
+FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
@@ -16,7 +16,7 @@ RUN npm run build
 # ==========================================
 # Stage 2: Set up the Node.js Backend
 # ==========================================
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app/backend
 

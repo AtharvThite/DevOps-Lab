@@ -144,7 +144,7 @@ clone_or_copy_source() {
 
   if [[ -n "${DEPLOY_SOURCE_PATH}" ]]; then
     if [[ -d "${DEPLOY_SOURCE_PATH}" ]]; then
-      lxc file push --recursive "${DEPLOY_SOURCE_PATH}" "${CONTAINER_NAME}:${REMOTE_SOURCE_DIR}"
+      lxc file push -p --recursive "${DEPLOY_SOURCE_PATH}" "${CONTAINER_NAME}${REMOTE_SOURCE_DIR}"
       return
     fi
 
@@ -159,7 +159,7 @@ clone_or_copy_source() {
           local temp_dir
           temp_dir="$(mktemp -d /tmp/devops-lab-upload-XXXXXX)"
           unzip -q "${DEPLOY_SOURCE_PATH}" -d "${temp_dir}"
-          lxc file push --recursive "${temp_dir}" "${CONTAINER_NAME}:${REMOTE_SOURCE_DIR}"
+          lxc file push -p --recursive "${temp_dir}" "${CONTAINER_NAME}${REMOTE_SOURCE_DIR}"
           rm -rf "${temp_dir}"
           return
           ;;

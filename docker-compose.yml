@@ -102,7 +102,37 @@ services:
     volumes:
       - postgresql_data:/var/lib/postgresql/data
 
+  # ── Jenkins ────────────────────────────────────────────────
+  jenkins:
+    build:
+      context: ./infrastructure/jenkins
+      dockerfile: Dockerfile
+    container_name: devops-lab-jenkins
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    user: root
+    environment:
+      # Pass through environment variables similar to backend
+      SONAR_HOST_URL: http://sonarqube:9000
+      DEPLOYMENT_TARGET: lxd
+      SONAR_TOKEN: "${SONAR_TOKEN:-}"
+      LXD_CONTAINER_NAME: "${LXD_CONTAINER_NAME:-devops-lab-app-jenkins}"
+      REPO_ROOT: /repo
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      # Mount the entire repo to /repo
+      - ./:/repo:rw,Z
+      # Mount the LXD socket from the host proxy
+      - ./lxd-proxy.sock:/var/snap/lxd/common/lxd/unix.socket:rw
+      # Share terraform state across rebuilds
+      - terraform_state:/app/infra/terraform
+    security_opt:
+      - label=disable
+
 volumes:
+  jenkins_home:
   mongo_data:
   backend_uploads:
   terraform_state:

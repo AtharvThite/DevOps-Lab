@@ -131,3 +131,4 @@
 2026/05/02 20:40:17 socat[62481] W waitpid(-1, {}, WNOHANG): no (more) child has exited
 2026/05/02 20:40:17 socat[107875] E read(18, 0x560e6f6c8000, 8192): Connection reset by peer
 2026/05/02 20:41:28 socat[108430] E read(18, 0x560e6f6c8000, 8192): Connection reset by peer
+2026/05/02 23:45:21 socat[62481] W exiting on signal 15

@@ -13,6 +13,7 @@ This guide is designed to help you present your DevOps project smoothly to your 
    - Your Custom Web UI: `http://localhost:5173`
    - Jenkins Dashboard: `http://localhost:8080`
    - SonarQube Dashboard: `http://localhost:9000`
+   - Expose Jenkins via ngrok: `run ngrok http 8080`
    - Docker Hub Repository (your account showing the `devops-lab` image)
    - GitHub Repository (showing your codebase)
 

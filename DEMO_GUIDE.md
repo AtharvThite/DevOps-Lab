@@ -90,3 +90,47 @@ Walk the teacher through the stages as they execute:
 - **Don't rush**: Let the logs scroll. Teachers like to read the terminal output to verify things are actually happening.
 - **Keep it visual**: Constantly switch between Jenkins, the Terminal (`lxc list`), and Docker Hub to show the *cause and effect* of your pipeline.
 - **Be proud of the Podman fix**: The `runroot must be set` and `chunked upload` issues you fixed are advanced DevOps concepts. If the teacher asks about challenges, bring those up! It shows deep understanding of container file systems.
+
+---
+
+## 🚀 Quick Start (Podman + LXD)
+
+Use these steps if you want a clean, end-to-end startup before the demo.
+
+1. Start LXD
+   ```bash
+   sudo systemctl start snap.lxd.daemon
+   sudo systemctl enable snap.lxd.daemon
+   ```
+
+2. Initialize LXD (first time only)
+   ```bash
+   sudo lxd init --auto
+   ```
+
+3. Ensure your user can access LXD
+   ```bash
+   sudo usermod -aG lxd "$USER"
+   newgrp lxd
+   ```
+
+4. Start the LXD socket proxy for rootless Podman
+   ```bash
+   cd /home/atharv/Desktop/DevOps/DevOps-Lab
+   bash ./start_lxd_proxy.sh
+   ```
+
+5. (Optional) Export SonarQube token for the stack
+   ```bash
+   export SONAR_TOKEN=your_token_here
+   ```
+
+6. Start the full stack with Podman Compose
+   ```bash
+   podman compose up -d
+   ```
+
+7. Verify services
+   ```bash
+   podman compose ps
+   ```

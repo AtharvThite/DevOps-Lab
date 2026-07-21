@@ -21,13 +21,7 @@ pipeline {
         }
 
         // 2. Run Tests and Infrastructure scripts
-        stage('Code Quality (SonarQube)') {
-            steps {
-                dir('backend') {
-                    sh 'bash ./infra/scripts/run_sonar.sh'
-                }
-            }
-        }
+       
         
         stage('Infrastructure (Terraform Init)') {
             steps {

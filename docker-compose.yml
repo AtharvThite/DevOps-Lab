@@ -15,7 +15,7 @@ services:
     container_name: devops-lab-backend
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "5005:5000"
     depends_on:
       - mongo
       - sonarqube
